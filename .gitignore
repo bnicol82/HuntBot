@@ -1,0 +1,30 @@
+node_modules/
+dist/
+coverage/
+.turbo/
+*.log
+.DS_Store
+
+# env
+.env
+.env.*
+!.env.example
+
+# expo
+.expo/
+apps/mobile/ios/
+apps/mobile/android/
+apps/mobile/expo-env.d.ts
+*.jks
+*.p8
+*.p12
+*.key
+*.mobileprovision
+
+# supabase
+supabase/.temp/
+supabase/.branches/
+
+# python
+__pycache__/
+.venv/
