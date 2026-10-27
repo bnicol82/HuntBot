@@ -11,8 +11,8 @@ concurrency:
 
 jobs:
   checks:
-    name: Typecheck · lint · test
-    runs-on: ubuntu-latest
+    name: Typecheck · lint · test · build
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4 # version comes from package.json "packageManager"
@@ -25,14 +25,39 @@ jobs:
       - run: pnpm typecheck
       - run: pnpm lint
       - run: pnpm test
+      - name: Build the Vercel bundle
+        run: pnpm --filter @huntbot/api build
 
   database:
-    name: Migrations + RLS tests
-    runs-on: ubuntu-latest
+    name: Migrations · RLS · API integration
+    runs-on: ubuntu-24.04
+    env:
+      # A non-superuser owner, like Neon's database owner role.
+      DATABASE_URL: postgres://owner_role:owner@localhost:5432/huntbot
+      TEST_DATABASE_URL: postgres://owner_role:owner@localhost:5432/huntbot
     steps:
       - uses: actions/checkout@v4
-      - uses: supabase/setup-cli@v1
+      - name: Start Postgres 16 with PostGIS + pgTAP
+        run: |
+          sudo apt-get update -q
+          sudo apt-get install -y -q postgresql-16-postgis-3 postgresql-16-pgtap libtap-parser-sourcehandler-pgtap-perl
+          sudo systemctl start postgresql.service
+          sudo -u postgres psql -v ON_ERROR_STOP=1 <<'SQL'
+          create role owner_role login createrole password 'owner';
+          create database huntbot owner owner_role;
+          \c huntbot
+          create extension postgis;
+          create extension pgtap;
+          SQL
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
         with:
-          version: 2.122.0
-      - run: supabase db start
-      - run: supabase test db
+          node-version-file: .nvmrc
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Migrate (twice — must be idempotent)
+        run: |
+          pnpm --filter @huntbot/db migrate
+          pnpm --filter @huntbot/db migrate
+      - run: pnpm --filter @huntbot/db test:sql
+      - run: pnpm --filter @huntbot/api test

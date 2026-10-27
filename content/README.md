@@ -12,7 +12,7 @@ whitetail/calling.yaml     calling rules                         (M3)
 whitetail/placement.yaml   stand placement basics                (M3)
 whitetail/sign.yaml        reading sign                          (M1/M3)
 lessons/*.md               offline lessons                       (M3)
-regulations/<STATE>.yaml   per-state rules with sources          (M2)
+regulations/<STATE>.yaml   per-state rules with sources, all 50 states, added as verified (M2)
 ai/system-prompt.md        AI coach guardrails                   (M4)
 engine.yaml                overrides for hunt-engine constants   (M2)
 ```
