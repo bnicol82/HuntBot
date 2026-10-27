@@ -1,33 +1,33 @@
--- RLS + trigger tests for the M0 schema. Run with `supabase test db`.
+-- RLS + trigger tests for the M0 schema. Run with `pnpm --filter @huntbot/db test:sql`.
 begin;
-create extension if not exists pgtap with schema extensions;
-set search_path = public, extensions;
+create extension if not exists pgtap;
 
-select plan(32);
+select plan(39);
 
 -- Users: A owns the area, B member, C outsider, G guest, X expired guest, Y youth mentored by A.
-insert into auth.users (id, email, raw_user_meta_data) values
-  ('00000000-0000-0000-0000-00000000000a', 'a@test.dev', '{"full_name":"Andy"}'),
-  ('00000000-0000-0000-0000-00000000000b', 'b@test.dev', '{}'),
-  ('00000000-0000-0000-0000-00000000000c', 'c@test.dev', '{}'),
-  ('00000000-0000-0000-0000-000000000006', 'g@test.dev', '{}'),
-  ('00000000-0000-0000-0000-000000000007', 'x@test.dev', '{}'),
-  ('00000000-0000-0000-0000-000000000009', 'y@test.dev', '{}');
+insert into "user" (id, name, email, "emailVerified") values
+  ('00000000-0000-0000-0000-00000000000a', 'Andy', 'a@test.dev', true),
+  ('00000000-0000-0000-0000-00000000000b', '', 'b@test.dev', true),
+  ('00000000-0000-0000-0000-00000000000c', '', 'c@test.dev', true),
+  ('00000000-0000-0000-0000-000000000006', '', 'g@test.dev', true),
+  ('00000000-0000-0000-0000-000000000007', '', 'x@test.dev', true),
+  ('00000000-0000-0000-0000-000000000009', '', 'y@test.dev', true);
 
 -- 1–2: profile trigger
 select is((select count(*)::int from profiles), 6, 'a profile is created for every auth user');
 select is((select display_name from profiles where id = '00000000-0000-0000-0000-00000000000a'), 'Andy',
-  'display name comes from auth metadata');
+  'display name comes from the auth user');
 
 update profiles set is_youth = true, mentor_id = '00000000-0000-0000-0000-00000000000a'
   where id = '00000000-0000-0000-0000-000000000009';
 
-create or replace function pg_temp.login(uid uuid) returns void language sql as $$
-  select set_config('role', 'authenticated', true),
-         set_config('request.jwt.claims', json_build_object('sub', uid, 'role', 'authenticated')::text, true);
-$$;
-create or replace function pg_temp.logout() returns void language sql as $$
-  select set_config('role', 'postgres', true), set_config('request.jwt.claims', '', true);
+-- Mirrors packages/db/src/index.ts withUser(): request identity + the app_user role.
+create or replace function pg_temp.login(uid uuid) returns void language plpgsql as $$
+begin
+  reset role;
+  perform set_config('app.user_id', uid::text, true);
+  set local role app_user;
+end;
 $$;
 
 -- ---------------------------------------------------------------- A builds an area
@@ -143,10 +143,28 @@ select is((select count(*)::int from sightings), 0, 'mentor does not see youth''
 select pg_temp.login('00000000-0000-0000-0000-00000000000b');
 select is((select count(*)::int from sits), 0, 'non-mentor does not see youth''s sits');
 
--- ---------------------------------------------------------------- anon
-select pg_temp.logout();
-set local role anon;
-select throws_ok($$ select count(*) from pins $$, '42501', null, 'anon has no table access');
+-- ---------------------------------------------------------------- age gate
+select pg_temp.login('00000000-0000-0000-0000-00000000000c');
+select is((select is_youth from confirm_age(true)), true, 'age gate records a youth');
+select is((select is_youth from confirm_age(false)), true, 'age answer cannot be changed afterwards');
+select isnt((select age_confirmed_at from profiles), null, 'age confirmation time is stored');
+
+-- ---------------------------------------------------------------- auth tables + no identity
+select throws_ok($$ select count(*) from "session" $$, '42501', null, 'app_user cannot read auth sessions');
+reset role;
+select set_config('app.user_id', '', true);
+set local role app_user;
+select is((select count(*)::int from pins), 0, 'no request identity sees no pins');
+
+-- ---------------------------------------------------------------- account deletion
+reset role;
+delete from "user" where id = '00000000-0000-0000-0000-00000000000a';
+select is((select count(*)::int from profiles where id = '00000000-0000-0000-0000-00000000000a'), 0,
+  'deleting an account deletes the profile');
+select is((select count(*)::int from pins where owner_id = '00000000-0000-0000-0000-00000000000a'), 0,
+  'deleting an account deletes its pins and areas');
+select is((select area_id from pins where owner_id = '00000000-0000-0000-0000-00000000000b'), null,
+  'other members keep their pins from a deleted area');
 
 select * from finish();
 rollback;
