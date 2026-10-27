@@ -6,7 +6,7 @@ import { describe, expect, it } from 'vitest';
 
 import { PIN_TYPES } from './pin-types';
 
-const migrationsDir = fileURLToPath(new URL('../../../supabase/migrations', import.meta.url));
+const migrationsDir = fileURLToPath(new URL('../../db/migrations', import.meta.url));
 
 /** Parse `('id', 'category', 'geometry', alt|null, halfLife|null)` rows from the pin_types seed. */
 function sqlPinTypes() {
@@ -28,7 +28,7 @@ function sqlPinTypes() {
 }
 
 describe('pin types stay in sync with the database seed', () => {
-  it('matches supabase/migrations', () => {
+  it('matches packages/db/migrations', () => {
     const fromTs = PIN_TYPES.map((t) => ({
       id: t.id,
       category: t.category,
