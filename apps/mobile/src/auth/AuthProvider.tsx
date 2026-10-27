@@ -1,32 +1,75 @@
-import type { Session } from '@supabase/supabase-js';
-import { createContext, use, useEffect, useState, type ReactNode } from 'react';
+import type { Profile } from '@huntbot/shared';
+import { createContext, use, useCallback, useEffect, useState, type ReactNode } from 'react';
 
-import { supabase } from '@/lib/supabase';
+import { api } from '@/lib/api';
+import { authClient } from '@/lib/auth-client';
+import { backendConfigured } from '@/lib/env';
+
+import { clearPendingAgeBracket, takePendingAgeBracket } from './age';
 
 interface AuthState {
-  session: Session | null;
+  signedIn: boolean;
+  profile: Profile | null;
   loading: boolean;
+  error: string | null;
+  setProfile: (p: Profile) => void;
+  reload: () => void;
 }
 
-const AuthContext = createContext<AuthState>({ session: null, loading: true });
+type Loaded = { key: string; profile: Profile | null; error: string | null };
+
+const AuthContext = createContext<AuthState | null>(null);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [state, setState] = useState<AuthState>({ session: null, loading: Boolean(supabase) });
+  const { data: session, isPending } = authClient.useSession();
+  const userId = session?.user.id ?? null;
+  const [attempt, setAttempt] = useState(0);
+  // Results are tagged with the user + attempt they belong to, so a stale result never shows.
+  const key = userId ? `${userId}:${attempt}` : null;
+  const [loaded, setLoaded] = useState<Loaded | null>(null);
 
   useEffect(() => {
-    if (!supabase) return;
-    supabase.auth
-      .getSession()
-      .then(({ data }) => setState({ session: data.session, loading: false }));
-    const { data } = supabase.auth.onAuthStateChange((_event, session) =>
-      setState({ session, loading: false }),
+    if (!key) return;
+    let cancelled = false;
+    (async () => {
+      let p = await api.getMe();
+      // Answer given on the sign-in screen before the account existed.
+      if (!p.age_confirmed_at) {
+        const pending = await takePendingAgeBracket();
+        if (pending) p = await api.confirmAge(pending);
+      }
+      if (p.age_confirmed_at) await clearPendingAgeBracket();
+      return p;
+    })().then(
+      (p) => !cancelled && setLoaded({ key, profile: p, error: null }),
+      (e: Error) => !cancelled && setLoaded({ key, profile: null, error: e.message }),
     );
-    return () => data.subscription.unsubscribe();
-  }, []);
+    return () => {
+      cancelled = true;
+    };
+  }, [key]);
 
-  return <AuthContext value={state}>{children}</AuthContext>;
+  const current = key && loaded?.key === key ? loaded : null;
+  const reload = useCallback(() => setAttempt((n) => n + 1), []);
+  const setProfile = useCallback(
+    (p: Profile) => key && setLoaded({ key, profile: p, error: null }),
+    [key],
+  );
+
+  const value: AuthState = {
+    signedIn: Boolean(userId),
+    profile: current?.profile ?? null,
+    loading: backendConfigured && (isPending || (Boolean(key) && !current)),
+    error: current?.error ?? null,
+    setProfile,
+    reload,
+  };
+
+  return <AuthContext value={value}>{children}</AuthContext>;
 }
 
 export function useAuth() {
-  return use(AuthContext);
+  const ctx = use(AuthContext);
+  if (!ctx) throw new Error('useAuth must be used inside <AuthProvider>');
+  return ctx;
 }

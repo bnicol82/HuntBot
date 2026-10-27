@@ -1,3 +1,4 @@
+import type { AgeBracket } from '@huntbot/shared';
 import * as AppleAuthentication from 'expo-apple-authentication';
 import { useEffect, useState } from 'react';
 import { KeyboardAvoidingView, Platform, StyleSheet, Text, TextInput, View } from 'react-native';
@@ -9,6 +10,8 @@ import {
   signInWithGoogle,
   signUpWithEmail,
 } from '@/auth/providers';
+import { setPendingAgeBracket } from '@/auth/age';
+import { AgeQuestion, UnderThirteen } from '@/components/AgeQuestion';
 import { Button } from '@/components/Button';
 import { googleSignInConfigured } from '@/lib/env';
 import { colors, fontSize, minTouchTarget, radius, spacing } from '@/theme';
@@ -19,20 +22,52 @@ export default function SignIn() {
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [appleAvailable, setAppleAvailable] = useState(false);
+  // Age is asked before any account exists, so under-13s never sign up (spec §13.5).
+  const [age, setAge] = useState<AgeBracket | null>(null);
 
   useEffect(() => {
     AppleAuthentication.isAvailableAsync().then(setAppleAvailable, () => setAppleAvailable(false));
   }, []);
 
-  async function run(fn: () => Promise<string | null>, success?: string) {
+  async function run(fn: () => Promise<string | null>) {
     setBusy(true);
     setMessage(null);
     const error = await fn();
     setBusy(false);
-    setMessage(error ?? success ?? null);
+    setMessage(error);
   }
 
   const emailReady = email.includes('@') && password.length >= 8;
+
+  async function answerAge(bracket: AgeBracket) {
+    if (bracket !== 'under_13') await setPendingAgeBracket(bracket);
+    setAge(bracket);
+  }
+
+  const header = (
+    <View style={styles.header}>
+      <Text style={styles.title}>HuntBot</Text>
+      <Text style={styles.subtitle}>Read the wind. Learn your ground.</Text>
+    </View>
+  );
+
+  if (age === null || age === 'under_13') {
+    return (
+      <SafeAreaView style={styles.root}>
+        <View style={styles.inner}>
+          {header}
+          {age === 'under_13' ? (
+            <>
+              <UnderThirteen />
+              <Button label="Back" variant="secondary" onPress={() => setAge(null)} />
+            </>
+          ) : (
+            <AgeQuestion onAnswer={(b) => void answerAge(b)} />
+          )}
+        </View>
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView style={styles.root}>
@@ -40,10 +75,7 @@ export default function SignIn() {
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         style={styles.inner}
       >
-        <View style={styles.header}>
-          <Text style={styles.title}>Windfall</Text>
-          <Text style={styles.subtitle}>Read the wind. Learn your ground.</Text>
-        </View>
+        {header}
 
         {appleAvailable && (
           <AppleAuthentication.AppleAuthenticationButton
@@ -94,12 +126,7 @@ export default function SignIn() {
             label="Create account"
             variant="secondary"
             disabled={busy || !emailReady}
-            onPress={() =>
-              run(
-                () => signUpWithEmail(email, password),
-                'Check your email to confirm your account.',
-              )
-            }
+            onPress={() => run(() => signUpWithEmail(email, password))}
           />
         </View>
 

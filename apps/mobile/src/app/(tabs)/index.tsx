@@ -1,11 +1,11 @@
-import { formatDecimal } from '@windfall/geo';
+import { formatDecimal } from '@huntbot/geo';
 import { useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { signOut } from '@/auth/providers';
 import { Compass } from '@/components/Compass';
-import { supabase } from '@/lib/supabase';
+import { backendConfigured } from '@/lib/env';
 import { useForegroundLocation } from '@/location/useLocation';
 import { useTrueHeading } from '@/location/useTrueHeading';
 import { HuntMap, mapConfigured } from '@/map/HuntMap';
@@ -51,7 +51,7 @@ export default function MapScreen() {
               </Pressable>
             ))}
           </View>
-          {supabase && (
+          {backendConfigured && (
             <Pressable
               onPress={() => void signOut()}
               style={styles.chip}
