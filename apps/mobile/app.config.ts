@@ -4,17 +4,17 @@ import type { ConfigContext, ExpoConfig } from 'expo/config';
  * Native identifiers are placeholders until the founders pick a name (spec §20.5).
  * See docs/DECISIONS.md.
  */
-const BUNDLE_ID = process.env.APP_BUNDLE_ID ?? 'com.windfall.app';
+const BUNDLE_ID = process.env.APP_BUNDLE_ID ?? 'com.huntbot.app';
 const GOOGLE_IOS_URL_SCHEME = process.env.GOOGLE_IOS_URL_SCHEME;
 
 export default ({ config }: ConfigContext): ExpoConfig => ({
   ...config,
-  name: 'Windfall',
-  slug: 'windfall',
+  name: 'HuntBot',
+  slug: 'huntbot',
   version: '0.1.0',
   orientation: 'portrait',
   icon: './assets/images/icon.png',
-  scheme: 'windfall',
+  scheme: 'huntbot',
   // Field-dark by default (spec §14); never flash white.
   userInterfaceStyle: 'dark',
   backgroundColor: '#0E110D',
@@ -55,7 +55,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
       'expo-location',
       {
         locationWhenInUsePermission:
-          'Windfall uses your location to show where you are on the map, point you back to the truck, and work out where your scent is drifting.',
+          'HuntBot uses your location to show where you are on the map, point you back to the truck, and work out where your scent is drifting.',
       },
     ],
     'expo-apple-authentication',

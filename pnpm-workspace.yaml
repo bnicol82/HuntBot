@@ -16,11 +16,21 @@ minimumReleaseAgeExclude:
   - '@typescript-eslint/utils@8.72.1'
   - '@typescript-eslint/visitor-keys@8.72.1'
   - typescript-eslint@8.72.1
+  - '@better-auth/core@1.7.14'
+  - '@better-auth/drizzle-adapter@1.7.14'
+  - '@better-auth/expo@1.7.14'
+  - '@better-auth/kysely-adapter@1.7.14'
+  - '@better-auth/memory-adapter@1.7.14'
+  - '@better-auth/mongo-adapter@1.7.14'
+  - '@better-auth/prisma-adapter@1.7.14'
+  - '@better-auth/telemetry@1.7.14'
+  - better-auth@1.7.14
 
 nodeLinker: hoisted
 
 # Explicit decisions for dependency install scripts (pnpm blocks them by default).
-# Both ship prebuilt binaries, so their postinstall isn't needed.
+# The first two ship prebuilt binaries; esbuild's postinstall just verifies its binary.
 allowBuilds:
   '@parcel/watcher': false
   unrs-resolver: false
+  esbuild: true

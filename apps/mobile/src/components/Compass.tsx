@@ -1,4 +1,4 @@
-import { compassPoint } from '@windfall/hunt-engine';
+import { compassPoint } from '@huntbot/hunt-engine';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import type { Heading } from '@/location/useTrueHeading';

@@ -1,4 +1,4 @@
-import { COMPASS_16, type CompassIndex, type CompassPoint } from '@windfall/shared';
+import { COMPASS_16, type CompassIndex, type CompassPoint } from '@huntbot/shared';
 
 /** Normalize any angle to [0, 360). */
 export function normalizeDeg(deg: number): number {

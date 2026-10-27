@@ -5,8 +5,6 @@ dist
 coverage
 apps/mobile/ios
 apps/mobile/android
-supabase/.temp
+.vercel
 
-# Supabase CLI config and generated files
-supabase/config.toml
 .claude

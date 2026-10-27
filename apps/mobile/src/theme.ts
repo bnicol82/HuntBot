@@ -1,4 +1,4 @@
-import { fieldDark, fontSize, minTouchTarget, radius, spacing } from '@windfall/ui';
+import { fieldDark, fontSize, minTouchTarget, radius, spacing } from '@huntbot/ui';
 
 /** Field-dark everywhere until red-night lands with Hunt Mode (M3). */
 export const colors = fieldDark;

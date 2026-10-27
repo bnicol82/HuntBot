@@ -27,7 +27,7 @@ export interface PinTypeDef {
 
 /**
  * Pin type catalogue (spec §5.2). Mirrors the `pin_types` lookup table seeded in
- * `supabase/migrations`; a test keeps the two in sync.
+ * `packages/db/migrations`; a test keeps the two in sync.
  */
 export const PIN_TYPES = [
   // Sign

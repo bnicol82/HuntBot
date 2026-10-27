@@ -21,10 +21,10 @@ apps/mobile/expo-env.d.ts
 *.key
 *.mobileprovision
 
-# supabase
-supabase/.temp/
-supabase/.branches/
 
 # python
 __pycache__/
 .venv/
+
+# vercel
+.vercel/

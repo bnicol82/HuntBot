@@ -1,5 +1,6 @@
-// Root flat config for packages/*. apps/mobile has its own config (Expo rules).
+// Root flat config for packages/* and apps/api. apps/mobile has its own config (Expo rules).
 import js from '@eslint/js';
+import globals from 'globals';
 import tseslint from 'typescript-eslint';
 
 export default tseslint.config(
@@ -8,12 +9,13 @@ export default tseslint.config(
       '**/node_modules/**',
       '**/dist/**',
       '**/coverage/**',
-      'apps/**',
-      'supabase/functions/**',
+      '**/.vercel/**',
+      'apps/mobile/**',
     ],
   },
   js.configs.recommended,
   ...tseslint.configs.recommended,
+  { files: ['**/*.mjs', '**/*.js'], languageOptions: { globals: globals.node } },
   {
     rules: {
       '@typescript-eslint/no-unused-vars': [

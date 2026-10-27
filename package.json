@@ -1,5 +1,5 @@
 {
-  "name": "windfall",
+  "name": "huntbot",
   "private": true,
   "packageManager": "pnpm@12.15.0",
   "engines": {
@@ -16,6 +16,7 @@
   "devDependencies": {
     "@eslint/js": "^9.39.5",
     "eslint": "^9.39.5",
+    "globals": "^17.13.0",
     "prettier": "^3.9.10",
     "turbo": "^2.11.10",
     "typescript": "~6.0.3",
